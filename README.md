@@ -96,6 +96,10 @@ canvasHelper.draw();
 
 Particle System Configuration 
 =============================
+You can use the online editor to generate configurations : http://labs.ezelia.com/epsy/
+
+or you can write them manually.
+
 
 EPSy configuration can be an object or an array of objects containing each the following configuration
 
@@ -221,7 +225,7 @@ var config = {
 
 ### Flame with smoke configuration example 
 this one uses an array of two emitters
-
+```
 var config = [
     {
         "pos": {
@@ -365,3 +369,4 @@ var config = [
     }
 ]
 
+```
