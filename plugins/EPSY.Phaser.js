@@ -146,7 +146,7 @@ Phaser.Plugin.EPSY.Emitter.prototype.reset = function () {
 Phaser.Plugin.EPSY.prototype.createEmitter = function (config, x, y) {
     x = x || 0;
     y = y || 0;
-    var emitter = new Ezelia.ParticleSystem.Emitter(config);
+    var emitter = new EPSY.Emitter(config);
 
     emitter.buffer = [];
     //force particle system pos to 0,0 so we can position it with phaser positions.x/y

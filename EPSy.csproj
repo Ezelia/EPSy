@@ -56,7 +56,6 @@
     <Content Include="plugins\EPSY.CanvasHelper.js" />
     <Content Include="plugins\EPSY.Pixi.js" />
     <None Include="lib\PIXI.d.ts" />
-    <None Include="Readme" />
     <Content Include="package.json" />
     <TypeScriptCompile Include="core\Emitter.class.ts" />
     <TypeScriptCompile Include="core\EmitterEntity.ts" />
