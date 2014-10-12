@@ -1,5 +1,104 @@
 ﻿var EPSY;
 (function (EPSY) {
+    (function (utils) {
+        (function (math) {
+            function toRad(deg) {
+                return Math.PI * deg / 180;
+            }
+            math.toRad = toRad;
+
+            function isNumber(i) {
+                return typeof i === 'number';
+            }
+            math.isNumber = isNumber;
+
+            function isInteger(num) {
+                return num === (num | 0);
+            }
+            math.isInteger = isInteger;
+
+            function frandom(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+            math.frandom = frandom;
+
+            function irandom(min, max) {
+                return Math.floor(Math.random() * (max - min + 1) + min);
+            }
+            math.irandom = irandom;
+
+            function normalize(vector) {
+                var length = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+
+                vector.x /= length;
+                vector.y /= length;
+            }
+            math.normalize = normalize;
+        })(utils.math || (utils.math = {}));
+        var math = utils.math;
+    })(EPSY.utils || (EPSY.utils = {}));
+    var utils = EPSY.utils;
+})(EPSY || (EPSY = {}));
+var EPSY;
+(function (EPSY) {
+    (function (utils) {
+        (function (_obj) {
+            function clone(obj, props) {
+                var clone = {};
+                this.extend(clone, obj);
+                return clone;
+            }
+            _obj.clone = clone;
+            function extend(obj, config) {
+                for (var prop in config) {
+                    if (config.hasOwnProperty(prop)) {
+                        obj[prop] = config[prop];
+                    }
+                }
+            }
+            _obj.extend = extend;
+
+            function recursiveExtend(obj, config, exceptions) {
+                exceptions = exceptions || [];
+                for (var prop in config) {
+                    if (config.hasOwnProperty(prop)) {
+                        if (exceptions.indexOf(prop) > -1) {
+                            obj[prop] = config[prop];
+                        } else {
+                            if (typeof config[prop] === 'object') {
+                                this.recursiveExtend(obj[prop], config[prop], exceptions);
+                            } else {
+                                obj[prop] = config[prop];
+                            }
+                        }
+                    }
+                }
+            }
+            _obj.recursiveExtend = recursiveExtend;
+            function recursiveExtendInclusive(obj, config, whitelist) {
+                if (!whitelist || !whitelist.length || whitelist.length <= 0)
+                    return;
+
+                for (var prop in config) {
+                    if (whitelist.indexOf(prop) >= 0) {
+                        if (typeof config[prop] === 'object') {
+                            if (!obj[prop])
+                                obj[prop] = {};
+                            this.recursiveExtend(obj[prop], config[prop]);
+                        } else {
+                            obj[prop] = config[prop];
+                        }
+                    }
+                }
+            }
+            _obj.recursiveExtendInclusive = recursiveExtendInclusive;
+        })(utils.obj || (utils.obj = {}));
+        var obj = utils.obj;
+    })(EPSY.utils || (EPSY.utils = {}));
+    var utils = EPSY.utils;
+})(EPSY || (EPSY = {}));
+var EPSY;
+(function (EPSY) {
     EPSY.EmitterParams = ['id', 'border', 'duration', 'emissionRate', 'totalParticles', 'xFactor', 'aFactor', 'xEquation', 'yEquation', 'posTransform', 'zIndex'];
 
     var Emitter = (function () {
@@ -508,6 +607,108 @@ var EPSY;
 })(EPSY || (EPSY = {}));
 var EPSY;
 (function (EPSY) {
+    var bufferCache = {};
+
+    function colorArrayToString(array, overrideAlpha) {
+        var r = array[0] | 0;
+        var g = array[1] | 0;
+        var b = array[2] | 0;
+        var a = overrideAlpha || array[3];
+
+        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
+    }
+
+    function getBuffer(particle) {
+        var img = particle.img;
+        if (!img) {
+            img = new Image();
+            particle.ready = false;
+            img.onload = function () {
+                particle.ready = true;
+            };
+            img.src = particle.texture;
+            particle.img = img;
+        }
+
+        if (!particle.ready)
+            return undefined;
+
+        var size = '' + img.width + 'x' + img.height;
+
+        var canvas = bufferCache[size];
+
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            bufferCache[size] = canvas;
+        }
+
+        return canvas;
+    }
+
+    var CanvasRenderer = (function () {
+        function CanvasRenderer(context) {
+            this.context = context;
+            this.defaultTexture = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACz0lEQVR42t2XP0hbURTGnfp/KK3QFiylCG11aRYpBQWFDiJCg266BNQtdnBQyOASQjp1KS4KGVw6iXMWEUdHUShkCBhSQpaQkJg/Jmm/H3xLEdtaWvLawMfJvfec79x77jnnvdfX96/9MpnM9VwudzOfz98qFAq3kYyZ/6tOi8XinVKpdLdSqfRXq9UHwsNarfYIyZh51tH7Y5s5Pj6+BqHI7+OsXq8/aTQag8LzZrM5JAwjGTPPOnroY4f9bzvPZrM3OBEnFPFTOXohvGy1WiPC6/Pz81FhDMmYedbRQx877OG5snPutFwu3zs7OxvQyZ6JPGSnE8KkMN1ut98KYSRjz094MyHssIcHviud3M4fE15OJuJxOZoSZoU5ISIsCIuWEc+zPoW+IzIED3y/FAnujLCxczt/JbI3Pum8sCQsCyudTmdVWEMy9vyS9cLYYe9NDMD705wgcbg7h33Ezmd8wqidrgtxISm8t4x7ns1ErT/jTYzABy/8Pyw1spcE4g4d9rDJ3ok8JiSED8KGsClsWW54nvUY+rYL+zpC8MJ/aYmyO0qILCaRfOfzPnnMJ/0opIRPwk63291FepzyetKbiNp+Cj544b80CtwRdUwpkc1OqCWHPWHybTtNS+5LHlimPb9tvYSvg5yYhQ9e+PFzWfj7aSa++0ln9bLvlvCm7GRP8lDySDhBerzn9ZT1152Yc/A5Fwbxc+EaqFPaKR3N9T7tO1xxgm04zJz0UPis/6fCFyRjbyJtPfTjro4IfPDCj58LfYEHCllKydDZ3GQWHP6kE23H4T6y05Jk1fLUkdh3TmzabtV9gmY1Cj9+8PfdBniqOQGHaa/O/kXXOaW25fAeOOycvPpVP6THJ86JXVcHdmtuVlTDGPz4wV+wItDzHOh5FfS8DwSiE/b8WdDzp2Eg3gd6/kYUiHfCQLwVB+K7IBBfRoH5Nvyvf98A3rZr7fen7G8AAAAASUVORK5CYII=';
+        }
+        CanvasRenderer.prototype.renderParticle = function (particle) {
+            if (!particle.texture)
+                particle.texture = this.defaultTexture;
+
+            particle.buffer = particle.buffer || getBuffer(particle);
+
+            if (!particle.buffer)
+                return;
+
+            var bufferContext = particle.buffer.getContext('2d');
+
+            var w = (particle.img.width * particle.scale) | 0;
+            var h = (particle.img.height * particle.scale) | 0;
+
+            var x = particle.pos.x - w / 2;
+            var y = particle.pos.y - h / 2;
+
+            bufferContext.clearRect(0, 0, particle.buffer.width, particle.buffer.height);
+            bufferContext.globalAlpha = particle.color[3];
+            bufferContext.drawImage(particle.img, 0, 0);
+
+            bufferContext.globalCompositeOperation = "source-atop";
+            bufferContext.fillStyle = colorArrayToString(particle.color, 1);
+            bufferContext.fillRect(0, 0, particle.buffer.width, particle.buffer.height);
+
+            bufferContext.globalCompositeOperation = "source-over";
+            bufferContext.globalAlpha = 1;
+
+            if (particle.textureAdditive) {
+                this.context.globalCompositeOperation = 'lighter';
+            } else {
+                this.context.globalCompositeOperation = 'source-over';
+            }
+
+            this.context.drawImage(particle.buffer, 0, 0, particle.buffer.width, particle.buffer.height, x, y, w, h);
+        };
+
+        CanvasRenderer.prototype.render = function (emitter) {
+            var particles = emitter.particles;
+            for (var i = 0; i < particles.length; ++i) {
+                var p = particles[i];
+                if (p.life > 0 && p.color) {
+                    this.renderParticle(p);
+                }
+            }
+            this.context.globalCompositeOperation = 'source-over';
+        };
+
+        CanvasRenderer.prototype.reset = function () {
+            return;
+        };
+        return CanvasRenderer;
+    })();
+    EPSY.CanvasRenderer = CanvasRenderer;
+})(EPSY || (EPSY = {}));
+var EPSY;
+(function (EPSY) {
     var PixiRenderer = (function () {
         function PixiRenderer(context) {
             this.context = context;
@@ -631,205 +832,3 @@ var EPSY;
     })();
     EPSY.PixiRenderer = PixiRenderer;
 })(EPSY || (EPSY = {}));
-var EPSY;
-(function (EPSY) {
-    var bufferCache = {};
-
-    function colorArrayToString(array, overrideAlpha) {
-        var r = array[0] | 0;
-        var g = array[1] | 0;
-        var b = array[2] | 0;
-        var a = overrideAlpha || array[3];
-
-        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
-    }
-
-    function getBuffer(particle) {
-        var img = particle.img;
-        if (!img) {
-            img = new Image();
-            particle.ready = false;
-            img.onload = function () {
-                particle.ready = true;
-            };
-            img.src = particle.texture;
-            particle.img = img;
-        }
-
-        if (!particle.ready)
-            return undefined;
-
-        var size = '' + img.width + 'x' + img.height;
-
-        var canvas = bufferCache[size];
-
-        if (!canvas) {
-            canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            bufferCache[size] = canvas;
-        }
-
-        return canvas;
-    }
-
-    var CanvasRenderer = (function () {
-        function CanvasRenderer(context) {
-            this.context = context;
-            this.defaultTexture = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACz0lEQVR42t2XP0hbURTGnfp/KK3QFiylCG11aRYpBQWFDiJCg266BNQtdnBQyOASQjp1KS4KGVw6iXMWEUdHUShkCBhSQpaQkJg/Jmm/H3xLEdtaWvLawMfJvfec79x77jnnvdfX96/9MpnM9VwudzOfz98qFAq3kYyZ/6tOi8XinVKpdLdSqfRXq9UHwsNarfYIyZh51tH7Y5s5Pj6+BqHI7+OsXq8/aTQag8LzZrM5JAwjGTPPOnroY4f9bzvPZrM3OBEnFPFTOXohvGy1WiPC6/Pz81FhDMmYedbRQx877OG5snPutFwu3zs7OxvQyZ6JPGSnE8KkMN1ut98KYSRjz094MyHssIcHviud3M4fE15OJuJxOZoSZoU5ISIsCIuWEc+zPoW+IzIED3y/FAnujLCxczt/JbI3Pum8sCQsCyudTmdVWEMy9vyS9cLYYe9NDMD705wgcbg7h33Ezmd8wqidrgtxISm8t4x7ns1ErT/jTYzABy/8Pyw1spcE4g4d9rDJ3ok8JiSED8KGsClsWW54nvUY+rYL+zpC8MJ/aYmyO0qILCaRfOfzPnnMJ/0opIRPwk63291FepzyetKbiNp+Cj544b80CtwRdUwpkc1OqCWHPWHybTtNS+5LHlimPb9tvYSvg5yYhQ9e+PFzWfj7aSa++0ln9bLvlvCm7GRP8lDySDhBerzn9ZT1152Yc/A5Fwbxc+EaqFPaKR3N9T7tO1xxgm04zJz0UPis/6fCFyRjbyJtPfTjro4IfPDCj58LfYEHCllKydDZ3GQWHP6kE23H4T6y05Jk1fLUkdh3TmzabtV9gmY1Cj9+8PfdBniqOQGHaa/O/kXXOaW25fAeOOycvPpVP6THJ86JXVcHdmtuVlTDGPz4wV+wItDzHOh5FfS8DwSiE/b8WdDzp2Eg3gd6/kYUiHfCQLwVB+K7IBBfRoH5Nvyvf98A3rZr7fen7G8AAAAASUVORK5CYII=';
-        }
-        CanvasRenderer.prototype.renderParticle = function (particle) {
-            if (!particle.texture)
-                particle.texture = this.defaultTexture;
-
-            particle.buffer = particle.buffer || getBuffer(particle);
-
-            if (!particle.buffer)
-                return;
-
-            var bufferContext = particle.buffer.getContext('2d');
-
-            var w = (particle.img.width * particle.scale) | 0;
-            var h = (particle.img.height * particle.scale) | 0;
-
-            var x = particle.pos.x - w / 2;
-            var y = particle.pos.y - h / 2;
-
-            bufferContext.clearRect(0, 0, particle.buffer.width, particle.buffer.height);
-            bufferContext.globalAlpha = particle.color[3];
-            bufferContext.drawImage(particle.img, 0, 0);
-
-            bufferContext.globalCompositeOperation = "source-atop";
-            bufferContext.fillStyle = colorArrayToString(particle.color, 1);
-            bufferContext.fillRect(0, 0, particle.buffer.width, particle.buffer.height);
-
-            bufferContext.globalCompositeOperation = "source-over";
-            bufferContext.globalAlpha = 1;
-
-            if (particle.textureAdditive) {
-                this.context.globalCompositeOperation = 'lighter';
-            } else {
-                this.context.globalCompositeOperation = 'source-over';
-            }
-
-            this.context.drawImage(particle.buffer, 0, 0, particle.buffer.width, particle.buffer.height, x, y, w, h);
-        };
-
-        CanvasRenderer.prototype.render = function (emitter) {
-            var particles = emitter.particles;
-            for (var i = 0; i < particles.length; ++i) {
-                var p = particles[i];
-                if (p.life > 0 && p.color) {
-                    this.renderParticle(p);
-                }
-            }
-            this.context.globalCompositeOperation = 'source-over';
-        };
-
-        CanvasRenderer.prototype.reset = function () {
-            return;
-        };
-        return CanvasRenderer;
-    })();
-    EPSY.CanvasRenderer = CanvasRenderer;
-})(EPSY || (EPSY = {}));
-var EPSY;
-(function (EPSY) {
-    (function (utils) {
-        (function (_obj) {
-            function clone(obj, props) {
-                var clone = {};
-                this.extend(clone, obj);
-                return clone;
-            }
-            _obj.clone = clone;
-            function extend(obj, config) {
-                for (var prop in config) {
-                    if (config.hasOwnProperty(prop)) {
-                        obj[prop] = config[prop];
-                    }
-                }
-            }
-            _obj.extend = extend;
-
-            function recursiveExtend(obj, config, exceptions) {
-                exceptions = exceptions || [];
-                for (var prop in config) {
-                    if (config.hasOwnProperty(prop)) {
-                        if (exceptions.indexOf(prop) > -1) {
-                            obj[prop] = config[prop];
-                        } else {
-                            if (typeof config[prop] === 'object') {
-                                this.recursiveExtend(obj[prop], config[prop], exceptions);
-                            } else {
-                                obj[prop] = config[prop];
-                            }
-                        }
-                    }
-                }
-            }
-            _obj.recursiveExtend = recursiveExtend;
-            function recursiveExtendInclusive(obj, config, whitelist) {
-                if (!whitelist || !whitelist.length || whitelist.length <= 0)
-                    return;
-
-                for (var prop in config) {
-                    if (whitelist.indexOf(prop) >= 0) {
-                        if (typeof config[prop] === 'object') {
-                            if (!obj[prop])
-                                obj[prop] = {};
-                            this.recursiveExtend(obj[prop], config[prop]);
-                        } else {
-                            obj[prop] = config[prop];
-                        }
-                    }
-                }
-            }
-            _obj.recursiveExtendInclusive = recursiveExtendInclusive;
-        })(utils.obj || (utils.obj = {}));
-        var obj = utils.obj;
-    })(EPSY.utils || (EPSY.utils = {}));
-    var utils = EPSY.utils;
-})(EPSY || (EPSY = {}));
-var EPSY;
-(function (EPSY) {
-    (function (utils) {
-        (function (math) {
-            function toRad(deg) {
-                return Math.PI * deg / 180;
-            }
-            math.toRad = toRad;
-
-            function isNumber(i) {
-                return typeof i === 'number';
-            }
-            math.isNumber = isNumber;
-
-            function isInteger(num) {
-                return num === (num | 0);
-            }
-            math.isInteger = isInteger;
-
-            function frandom(min, max) {
-                return Math.random() * (max - min) + min;
-            }
-            math.frandom = frandom;
-
-            function irandom(min, max) {
-                return Math.floor(Math.random() * (max - min + 1) + min);
-            }
-            math.irandom = irandom;
-
-            function normalize(vector) {
-                var length = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
-
-                vector.x /= length;
-                vector.y /= length;
-            }
-            math.normalize = normalize;
-        })(utils.math || (utils.math = {}));
-        var math = utils.math;
-    })(EPSY.utils || (EPSY.utils = {}));
-    var utils = EPSY.utils;
-})(EPSY || (EPSY = {}));
-//# sourceMappingURL=EPSY.js.map
