@@ -9,7 +9,9 @@
                 src: ['utils/*.ts', 'core/*.ts', 'render/*.ts'],
                 dest: 'build/<%= pkg.name %>.js',
                 options: {
-                    target: 'es5'
+                    target: 'es5',
+					sourceMap: true,
+					declaration: true
                 }
             }
         },

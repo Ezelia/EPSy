@@ -4,6 +4,8 @@ EPSy
 EPSy (Ezelia Particles Syetem) is a particle system mainly designed for [Phaser.io](https://github.com/photonstorm/phaser) and [Pixi.js](https://github.com/GoodBoyDigital/pixi.js/), 
 but can also be used standalone with an integrated Canvas renderer.
 
+Use the [online editor](http://labs.ezelia.com/epsy/) to generate awesome particles then export and use the data with EPSY !
+
 EPSy is inspired from [Matt Greer](http://www.mattgreer.org/) excellent tutorial about particles systems.
 
 Usage
