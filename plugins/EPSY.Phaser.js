@@ -48,8 +48,62 @@ Phaser.Plugin.EPSY.VERSION = '0.5.1';
 var updateParticle = function (emitter, particle) {
     if (!particle.sprite) {
 
-        //var texture = PIXI.Texture.fromImage(url);
-        particle.sprite = PIXI.Sprite.fromImage(particle.texture || this.defaultTexture);
+        // PIXI.Sprite.fromImage and PIXI.Texture.fromImage methods were
+        // removed from Phaser 2.5.x.
+        if (PIXI.Sprite.fromImage) {
+            particle.sprite = PIXI.Sprite.fromImage(particle.texture || this.defaultTexture);
+        }
+        else {
+            PIXI.TextureCache = [];
+            PIXI.BaseTextureCache = [];
+            PIXI.Sprite.fromImage = function(imageId, crossorigin, scaleMode)
+            {
+                var texture = PIXI.Texture.fromImage(imageId, crossorigin, scaleMode);
+                return new PIXI.Sprite(texture);
+            };
+            PIXI.Texture.fromImage = function(imageUrl, crossorigin, scaleMode)
+            {
+                var texture = PIXI.TextureCache[imageUrl];
+                if(!texture)
+                {
+                    texture = new PIXI.Texture(PIXI.BaseTexture.fromImage(imageUrl, crossorigin, scaleMode));
+                    PIXI.TextureCache[imageUrl] = texture;
+                }
+                return texture;
+            };
+            PIXI.BaseTexture.fromImage = function(imageUrl, crossorigin, scaleMode)
+            {
+                var baseTexture = PIXI.BaseTextureCache[imageUrl];
+
+                if(crossorigin === undefined && imageUrl.indexOf('data:') === -1) crossorigin = true;
+
+                if(!baseTexture)
+                {
+                    // new Image() breaks tex loading in some versions of Chrome.
+                    // See https://code.google.com/p/chromium/issues/detail?id=238071
+                    var image = new Image();
+
+                    if (crossorigin)
+                    {
+                        image.crossOrigin = '';
+                    }
+
+                    image.src = imageUrl;
+                    baseTexture = new PIXI.BaseTexture(image, scaleMode);
+                    baseTexture.imageUrl = imageUrl;
+                    PIXI.BaseTextureCache[imageUrl] = baseTexture;
+
+                    // if there is an @2x at the end of the url we are going to assume its a highres image
+                    if( imageUrl.indexOf(PIXI.RETINA_PREFIX + '.') !== -1)
+                    {
+                        baseTexture.resolution = 2;
+                    }
+                }
+
+                return baseTexture;
+            };
+            particle.sprite = PIXI.Sprite.fromImage(particle.texture || this.defaultTexture);
+        }
 
         particle.sprite.__parentParticle = particle;
 
